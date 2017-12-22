@@ -20,18 +20,11 @@
         <jdbc:script location="classpath:test_data.sql"/>
     </jdbc:embedded-database>
 
-    <aop:config>
-        <aop:pointcut id="serviceOperation" expression="execution(* ru.transaction.example.*ContactServiceImpl.*(..))"/>
-        <aop:advisor pointcut-ref="serviceOperation" advice-ref="txAdvice"/>
-    </aop:config>
-
-    <tx:advice id="txAdvice">
-        <tx:attributes>
-            <tx:method name="find" read-only="true"/>
-            <tx:method name="count*" propagation="NEVER"/>
-            <tx:method name="*"/>
-        </tx:attributes>
-    </tx:advice>
+   <bean id="transactionTemplate" class="org.springframework.transaction.support.TransactionTemplate">
+       <property name="propagationBehaviorName" value="PROPAGATION_NEVER"/>
+       <property name="timeout" value="30"/>
+       <property name="transactionManager" ref="transactionManager"/>
+   </bean>
 
     <bean id="transactionManager" class="org.springframework.orm.jpa.JpaTransactionManager">
         <property name="entityManagerFactory" ref="emf"/>

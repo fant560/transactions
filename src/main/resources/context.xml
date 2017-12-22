@@ -4,7 +4,7 @@
        xmlns:context="http://www.springframework.org/schema/context"
        xmlns:jdbc="http://www.springframework.org/schema/jdbc"
        xmlns:tx="http://www.springframework.org/schema/tx"
-       xmlns:jpa="http://www.springframework.org/schema/data/jpa"
+       xmlns:jpa="http://www.springframework.org/schema/data/jpa" xmlns:aop="http://www.springframework.org/schema/aop"
        xsi:schemaLocation="http://www.springframework.org/schema/jdbc
        http://www.springframework.org/schema/jdbc/spring-jdbc.xsd
        http://www.springframework.org/schema/tx
@@ -14,17 +14,28 @@
        http://www.springframework.org/schema/data/jpa
        http://www.springframework.org/schema/data/jpa/spring-jpa.xsd
        http://www.springframework.org/schema/context
-       http://www.springframework.org/schema/context/spring-context.xsd">
+       http://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd">
     <jdbc:embedded-database id="dataSource" type="H2">
         <jdbc:script location="classpath:schema.sql"/>
         <jdbc:script location="classpath:test_data.sql"/>
     </jdbc:embedded-database>
 
+    <aop:config>
+        <aop:pointcut id="serviceOperation" expression="execution(* ru.transaction.example.*ContactServiceImpl.*(..))"/>
+        <aop:advisor pointcut-ref="serviceOperation" advice-ref="txAdvice"/>
+    </aop:config>
+
+    <tx:advice id="txAdvice">
+        <tx:attributes>
+            <tx:method name="find" read-only="true"/>
+            <tx:method name="count*" propagation="NEVER"/>
+            <tx:method name="*"/>
+        </tx:attributes>
+    </tx:advice>
+
     <bean id="transactionManager" class="org.springframework.orm.jpa.JpaTransactionManager">
         <property name="entityManagerFactory" ref="emf"/>
     </bean>
-
-    <tx:annotation-driven/>
 
     <bean id="emf" class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
         <property name="dataSource" ref="dataSource"/>

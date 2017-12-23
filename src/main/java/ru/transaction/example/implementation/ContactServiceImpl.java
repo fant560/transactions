@@ -5,7 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.support.TransactionCallback;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import ru.transaction.example.entity.Contact;
 import ru.transaction.example.repository.ContactRepository;
@@ -17,35 +17,44 @@ import java.util.List;
 
 @Service("contactService")
 @Repository
+@Transactional
 public class ContactServiceImpl implements ContactService {
-    @Autowired
-    private ContactRepository contactRepository;
-    @Autowired
-    private TransactionTemplate transactionTemplate;
-    @PersistenceContext
-    private EntityManager em;
+    @PersistenceContext(unitName = "emfA")
+    private EntityManager emA;
+    @PersistenceContext(unitName = "emfB")
+    private EntityManager emB;
 
     @Override
+    @Transactional(readOnly = true)
     public List<Contact> findAll() {
-        // CrudRepository не умеет кастовать к нужному типу, что до неприличия странно
-         return Lists.newArrayList(contactRepository.findAll());
+         return null;
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Contact findById(Long id) {
-        return contactRepository.findOne(id);
+        return null;
     }
 
     @Override
     public Contact save(Contact contact) {
-        return contactRepository.save(contact);
+        Contact contactB = new Contact();
+        contactB.setFirstName(contact.getFirstName());
+        contactB.setLastName(contact.getLastName());
+        if (contact.getId() == null){
+            emA.persist(contact);
+            emB.persist(contactB);
+        } else {
+            emA.merge(contact);
+            emB.merge(contactB);
+        }
+
+        return contact;
+
     }
 
-    //Не хотим участие в транзакции, просто получаем счетчик и все
     @Override
     public long countAll() {
-        return transactionTemplate.execute(status ->
-                em.createNamedQuery("Contact.countAll", Long.class)
-                        .getSingleResult());
+        return 0;
     }
 }
